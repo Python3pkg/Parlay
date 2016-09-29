@@ -36,6 +36,25 @@ import time
 
 PropertyData = namedtuple('PropertyData', 'name format')
 
+# Store a map of Item IDs -> Command ID -> Command Objects
+# Command objects will store the parameter -> format mapping
+command_map = {}
+
+# Store a map of properties. We must keep track of a
+# name -> format mapping in order to serialize data
+property_map = {}
+
+# Store a map of command names to IDs
+# item ID -> Command name -> ID
+command_name_map = {}
+
+# Store a map of property names to IDs
+# item ID -> Property name -> ID
+property_name_map = {}
+
+# Map of error codes to their string name equivalent
+error_code_map = {}
+
 
 class PCOMSerial(BaseProtocol, LineReceiver):
 
@@ -265,7 +284,7 @@ class PCOMSerial(BaseProtocol, LineReceiver):
         :return: name of the property from Embedded Core
         """
 
-        response = yield self.send_command(to, command_id=GET_PROPERTY_NAME, params=["property_id"],
+        response = yield self.send_command(to, command_id=GET_PROPERTY_NAME, params=['0'],
                                            data=[requested_property_id])
 
         # The data in the response message will be a list,
@@ -283,7 +302,7 @@ class PCOMSerial(BaseProtocol, LineReceiver):
         :return: name from Embedded Core
         """
 
-        response = yield self.send_command(to, command_id=GET_COMMAND_NAME, params=["command_id"],
+        response = yield self.send_command(to, command_id=GET_COMMAND_NAME, params=['0'],
                                            data=[requested_command_id])
 
         # The data in the response message will be a list,
@@ -303,7 +322,7 @@ class PCOMSerial(BaseProtocol, LineReceiver):
         :return: format string describing input parameters
         """
 
-        response = yield self.send_command(to, command_id=GET_COMMAND_INPUT_PARAM_FORMAT, params=["command_id"],
+        response = yield self.send_command(to, command_id=GET_COMMAND_INPUT_PARAM_FORMAT, params=['0'],
                                            data=[requested_command_id])
 
         r_val = '' if len(response.data) == 0 else response.data[0]
@@ -323,7 +342,7 @@ class PCOMSerial(BaseProtocol, LineReceiver):
         :return: a list of parameter names
         """
 
-        response = yield self.send_command(to, command_id=GET_COMMAND_INPUT_PARAM_NAMES, params=["command_id"],
+        response = yield self.send_command(to, command_id=GET_COMMAND_INPUT_PARAM_NAMES, params=['0'],
                                            data=[requested_command_id])
 
         param_names = [] if len(response.data) == 0 else [x.strip() for x in response.data[0].split(',')]
@@ -343,7 +362,7 @@ class PCOMSerial(BaseProtocol, LineReceiver):
         :return: a list of parameter names
         """
 
-        response = yield self.send_command(to, command_id=GET_COMMAND_OUTPUT_PARAM_DESC, params=["command_id"],
+        response = yield self.send_command(to, command_id=GET_COMMAND_OUTPUT_PARAM_DESC, params=['0'],
                                            data=[requested_command_id])
         list_of_names = [] if len(response.data) == 0 else [x.strip() for x in response.data[0].split(',')]
         defer.returnValue(list_of_names)
@@ -359,7 +378,7 @@ class PCOMSerial(BaseProtocol, LineReceiver):
         :return: format string describing the type
         """
 
-        response = yield self.send_command(to, command_id=GET_PROPERTY_TYPE, params=["property_id"],
+        response = yield self.send_command(to, command_id=GET_PROPERTY_TYPE, params=['0'],
                                            data=[requested_property_id])
 
         r_val = '' if len(response.data) == 0 else response.data[0]
@@ -444,6 +463,7 @@ class PCOMSerial(BaseProtocol, LineReceiver):
         :return:
         """
 
+        print "Getting attached subsystems"
         # If we have stored systems, return them first
         while self._attached_item_d is not None:
             yield self._attached_item_d
@@ -455,10 +475,10 @@ class PCOMSerial(BaseProtocol, LineReceiver):
         # is to fetch all subsystems. The reactor inside of
         # the embedded core should return with each subsystem as a
         # ID, Name pair (eg. (0, "IO_Control_board"))
-
+        print "Sending broadcast"
         response = yield self.send_command(to=self.BROADCAST_SUBSYSTEM_ID, command_id=0, tx_type="BROADCAST")
         self._subsystem_ids = [int(response.data[0])]
-        # print "Subsystems found:", response.data[1]
+        print "Subsystems found:", response.data[1]
 
         # TODO: Explain this in comments
         d = self._attached_item_d
@@ -476,6 +496,7 @@ class PCOMSerial(BaseProtocol, LineReceiver):
         command_map[item_id] = {}
         property_map[item_id] = {}
         command_name_map[item_id] = {}
+        property_name_map[item_id] = {}
 
         command_map[item_id][RESET_ITEM] = CommandInfo("", "", "")
         command_map[item_id][GET_ITEM_NAME] = CommandInfo("", [], ["Item name"])
@@ -581,10 +602,13 @@ class PCOMSerial(BaseProtocol, LineReceiver):
         if not hidden:
             command_dropdowns.append((c_name, command_id))
 
-            for parameter in c_input_names:
-                local_subfields.append(parlay_item.create_field(parameter, INPUT_TYPES.STRING, required=True))
+            for position, parameter in enumerate(c_input_names):
+                #TODO: add logic to obtain correct input type from format string
+                local_subfields.append(parlay_item.create_field(msg_key=position, label=parameter, input=INPUT_TYPES.STRING, required=True))
 
+            local_subfields.append(parlay_item.create_field(msg_key='__format__', input=INPUT_TYPES.STRING, hidden=True, default=c_input_format))
             command_subfields.append(local_subfields)
+
         return
 
 
@@ -605,6 +629,7 @@ class PCOMSerial(BaseProtocol, LineReceiver):
         property_name = property_info_list[0]
         property_type = property_info_list[1]
 
+        property_name_map[item_id][property_name] = property_id
         property_map[item_id][property_id] = PropertyData(name=property_name, format=property_type)
 
         parlay_item.add_property(property_id, name=property_name)
@@ -681,7 +706,7 @@ class PCOMSerial(BaseProtocol, LineReceiver):
         self._error_codes = [int(error_code) for error_code in response.data]
 
         for error_code in self._error_codes:
-            response = yield self.send_command(to=REACTOR, tx_type="DIRECT", command_id=GET_ERROR_STRING, params=["code"], data=[error_code])
+            response = yield self.send_command(to=REACTOR, tx_type="DIRECT", command_id=GET_ERROR_STRING, params=['0'], data=[error_code])
             error_code_string = response.data[0]
             error_code_map[error_code] = error_code_string
 

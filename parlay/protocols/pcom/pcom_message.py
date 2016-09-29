@@ -13,8 +13,9 @@ conversion to and from a JSON message.
 """
 
 from parlay.protocols.utils import message_id_generator
-import serial_encoding
-from enums import *
+import serial_encoding as serial_encoding
+from parlay.protocols.pcom.enums import *
+import pcom_serial as pcom_serial
 
 
 class PCOMMessage(object):
@@ -92,12 +93,19 @@ class PCOMMessage(object):
         return item_id
 
     @staticmethod
-    def _look_up_cmd_id(destination_id, command):
-        if isinstance(command, basestring):
-            # TODO: use .get() to avoid key error
-            return command_name_map[destination_id].get(command, None)
+    def _look_up_id(map, destination_id, name):
+        """
+        Given a command name or property name map, looks up the ID for the requested name
+        for <destination_id> ID
+        :param map:
+        :param destination_id:
+        :param command:
+        :return:
+        """
+        if isinstance(name, basestring):
+            return map[destination_id].get(name, None)
         else:
-            return command
+            return name
 
 
 
@@ -119,17 +127,18 @@ class PCOMMessage(object):
         if msg.msg_type == "COMMAND":
             # If the message type is "COMMAND" there should be an
             # entry in the 'CONTENTS' table for the command ID
-            if msg.to in command_map:
+            if msg.to in pcom_serial.command_map:
                 # command will be a CommandInfo object that has a list of parameters and format string
-                command_id = msg.contents["COMMAND"]
-                command_int_id = cls._look_up_cmd_id(msg.to, command_id)
+                command_id = msg.contents.get("COMMAND", INVALID_ID)
+                command_int_id = cls._look_up_id(pcom_serial.command_name_map, msg.to, command_id)
                 if command_int_id is None:
                     print "Could not find integer command ID for command name:", command_id
                     return
-                command = command_map[msg.to][command_int_id]
-                fmt = command.fmt
-                for param in command.params:
-                    data.append(msg.contents[param] if msg.contents[param] is not None else 0)
+                command = pcom_serial.command_map[msg.to][command_int_id]
+                fmt = str(msg.contents.get('__format__', command.fmt))
+                for param_position in range(len(command.params)):
+                    # TODO: May need to change default value to error out
+                    data.append(msg.contents.get(str(param_position), 0))
 
         elif msg.msg_type == "PROPERTY":
             # If the message type is a "PROPERTY" there should be
@@ -141,8 +150,13 @@ class PCOMMessage(object):
                 data = []
                 fmt = ''
             elif action == "SET":
-                if msg.to in property_map:
-                    prop = property_map[msg.to][msg.contents['PROPERTY']]
+                if msg.to in pcom_serial.property_map:
+                    property_id = msg.contents.get("PROPERTY", INVALID_ID)
+                    property = cls._look_up_id(pcom_serial.property_name_map, msg.to, property_id)
+                    if property is None:
+                        print "Could not find integer property ID for property name:", property
+                        return
+                    prop = pcom_serial.property_map[msg.to][property]
                     fmt = prop.format
                     data.append(msg.contents['VALUE'] if msg.contents['VALUE'] is not None else 0)
                     data = serial_encoding.cast_data(fmt, data)
@@ -219,7 +233,7 @@ class PCOMMessage(object):
             msg['TOPICS']['MSG_TYPE'] = "RESPONSE"
             msg['CONTENTS']['STATUS'] = self.msg_status
             msg['TOPICS']['MSG_STATUS'] = "ERROR"
-            msg['CONTENTS']['DESCRIPTION'] = error_code_map.get(self.msg_status, "")
+            msg['CONTENTS']['DESCRIPTION'] = pcom_serial.error_code_map.get(self.msg_status, "")
             msg['TOPICS']['RESPONSE_REQ'] = False
             return msg
 
@@ -256,7 +270,7 @@ class PCOMMessage(object):
             msg['TOPICS']['MSG_TYPE'] = "RESPONSE"
             msg['CONTENTS']['ERROR_CODE'] = self.msg_status
             if msg_sub_type == ResponseSubType.Command:
-                item = command_map.get(self.from_, None)
+                item = pcom_serial.command_map.get(self.from_, None)
 
                 if item:
                     if msg_option == ResponseCommandOption.Complete:
@@ -289,7 +303,7 @@ class PCOMMessage(object):
             msg['CONTENTS']['EVENT'] = self.response_code
             msg['CONTENTS']['STATUS'] = self.msg_status
             msg['CONTENTS']["INFO"] = self.data
-            msg['CONTENTS']['DESCRIPTION'] = error_code_map.get(self.msg_status, "")
+            msg['CONTENTS']['DESCRIPTION'] = pcom_serial.error_code_map.get(self.msg_status, "")
             msg['TOPICS']['RESPONSE_REQ'] = False
 
             if msg_option == NotificationOptions.Debug:
