@@ -209,6 +209,7 @@ class PCOMSerial(BaseProtocol, LineReceiver):
         # Serialize the message and prepare for protocol wrapping.
         try:
             packet = encode_pcom_message(s)
+
         except:
             self.send_error_message(original_message=s, message_status="Unable to encode message: {0}".format(s))
             return d
@@ -222,8 +223,7 @@ class PCOMSerial(BaseProtocol, LineReceiver):
 
         # print "SENT MESSAGE: ", [hex(ord(x)) for x in packet]
 
-
-        # Write to serial line! Good luck packet.
+        # Write to serial line through the ack window
         self._ack_window.add(ACKInfo(sequence_num, 0, packet, self.transport))
         return d
 
@@ -254,8 +254,6 @@ class PCOMSerial(BaseProtocol, LineReceiver):
     would making understanding the protocol easier.
 
     """
-
-    @defer.inlineCallbacks
     def get_property_name(self, to, requested_property_id):
         """
         Sends a message down the serial line requesting the command name of a given command ID,
@@ -265,15 +263,15 @@ class PCOMSerial(BaseProtocol, LineReceiver):
         :return: name of the property from Embedded Core
         """
 
-        response = yield self.send_command(to, command_id=GET_PROPERTY_NAME, params=["property_id"],
+        result = self.send_command(to, command_id=GET_PROPERTY_NAME, params=["property_id"],
                                            data=[requested_property_id])
 
         # The data in the response message will be a list,
         # the property name should be in the 0th position
         # and strip the NULL byte.
-        defer.returnValue(response.data[0])
+        result.addCallback(lambda response: response.data[0])
+        return result
 
-    @defer.inlineCallbacks
     def get_command_name(self, to, requested_command_id):
         """
         Sends a messge down the serial line requesting the property name of a given property ID,
@@ -283,14 +281,14 @@ class PCOMSerial(BaseProtocol, LineReceiver):
         :return: name from Embedded Core
         """
 
-        response = yield self.send_command(to, command_id=GET_COMMAND_NAME, params=["command_id"],
+        result = self.send_command(to, command_id=GET_COMMAND_NAME, params=["command_id"],
                                            data=[requested_command_id])
 
         # The data in the response message will be a list,
         # the command name should be in the 0th position
-        defer.returnValue(response.data[0])
+        result.addCallback(lambda response: response.data[0])
+        return result
 
-    @defer.inlineCallbacks
     def get_command_input_param_format(self, to, requested_command_id):
         """
         Given a command ID and item ID, sends a message to the item ID requesting
@@ -303,13 +301,12 @@ class PCOMSerial(BaseProtocol, LineReceiver):
         :return: format string describing input parameters
         """
 
-        response = yield self.send_command(to, command_id=GET_COMMAND_INPUT_PARAM_FORMAT, params=["command_id"],
+        result = self.send_command(to, command_id=GET_COMMAND_INPUT_PARAM_FORMAT, params=["command_id"],
                                            data=[requested_command_id])
 
-        r_val = '' if len(response.data) == 0 else response.data[0]
-        defer.returnValue(r_val)
+        result.addCallback(lambda response:  '' if len(response.data) == 0 else response.data[0])
+        return result
 
-    @defer.inlineCallbacks
     def get_command_input_param_names(self, to, requested_command_id):
         """
         Given an item ID and a command ID, requests the parameter names of the command from the item.
@@ -323,13 +320,12 @@ class PCOMSerial(BaseProtocol, LineReceiver):
         :return: a list of parameter names
         """
 
-        response = yield self.send_command(to, command_id=GET_COMMAND_INPUT_PARAM_NAMES, params=["command_id"],
+        result = self.send_command(to, command_id=GET_COMMAND_INPUT_PARAM_NAMES, params=["command_id"],
                                            data=[requested_command_id])
 
-        param_names = [] if len(response.data) == 0 else [x.strip() for x in response.data[0].split(',')]
-        defer.returnValue(param_names)
+        result.addCallback(lambda response:  [] if len(response.data) == 0 else [x.strip() for x in response.data[0].split(',')])
+        return result
 
-    @defer.inlineCallbacks
     def get_command_output_parameter_desc(self, to, requested_command_id):
         """
         Given an item ID and a command ID, requests the output description
@@ -343,12 +339,11 @@ class PCOMSerial(BaseProtocol, LineReceiver):
         :return: a list of parameter names
         """
 
-        response = yield self.send_command(to, command_id=GET_COMMAND_OUTPUT_PARAM_DESC, params=["command_id"],
+        result = self.send_command(to, command_id=GET_COMMAND_OUTPUT_PARAM_DESC, params=["command_id"],
                                            data=[requested_command_id])
-        list_of_names = [] if len(response.data) == 0 else [x.strip() for x in response.data[0].split(',')]
-        defer.returnValue(list_of_names)
+        result.addCallback(lambda response: [] if len(response.data) == 0 else [x.strip() for x in response.data[0].split(',')])
+        return result
 
-    @defer.inlineCallbacks
     def get_property_type(self, to, requested_property_id):
         """
         Given a property ID, requests the property's type from the item ID.
@@ -359,11 +354,11 @@ class PCOMSerial(BaseProtocol, LineReceiver):
         :return: format string describing the type
         """
 
-        response = yield self.send_command(to, command_id=GET_PROPERTY_TYPE, params=["property_id"],
+        result = self.send_command(to, command_id=GET_PROPERTY_TYPE, params=["property_id"],
                                            data=[requested_property_id])
 
-        r_val = '' if len(response.data) == 0 else response.data[0]
-        defer.returnValue(r_val)
+        result.addCallback(lambda response: '' if len(response.data) == 0 else response.data[0])
+        return result
 
     def send_command(self, to, tx_type="DIRECT", command_id=0, msg_status="INFO", response_req=True, params=[], data=[]):
         """
