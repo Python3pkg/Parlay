@@ -407,6 +407,8 @@ class PCOMSerial(BaseProtocol, LineReceiver):
             result = defer.Deferred()
             # Add the correct mapping to the dictionary
             self._discovery_msg_ids[event_id] = result
+        else:
+            result = defer.succeed(None)  # need to return something
 
         # Message will be added to event queue and
         # sent down serial line (via callback function _message_queue_handler())
@@ -426,7 +428,6 @@ class PCOMSerial(BaseProtocol, LineReceiver):
         """
 
         self._get_attached_items()
-        return
 
     @defer.inlineCallbacks
     def _get_attached_items(self):
