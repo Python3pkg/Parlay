@@ -17,8 +17,6 @@ command_name_map = {}
 # Map of error codes to their string name equivalent
 error_code_map = {}
 
-
-
 # NOTE: These are global because the serial_encoding.py and
 # pcom_message.py modules need access to them. Since they will
 # be large maps we do not want to pass them as parameters.
@@ -43,7 +41,6 @@ DISCOVERY_MESSAGES = [GET_ITEM_NAME, GET_ITEM_TYPE, GET_COMMAND_IDS, GET_PROPERT
                       GET_PROPERTY_NAME, GET_PROPERTY_TYPE, GET_SUBSYSTEMS, RESET_ITEM]
 
 
-
 ITEM_TYPE_HIDDEN = 1000
 # From serial_encoding.py
 
@@ -55,7 +52,7 @@ STATUS_SUCCESS = 0
 STATUS_ERROR = 1
 
 START_BYTE_STR = b'\x02'
-END_BYTE_STR  = b'\x03'
+END_BYTE_STR = b'\x03'
 ESCAPE_BYTE_STR = b'\x10'
 
 PACKET_TYPE_MASK = 0xf0
