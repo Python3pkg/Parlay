@@ -129,7 +129,7 @@ class CloudLink(parlay.ParlayCommandItem):
         :type path str
         """
         url = "http://localhost:" + str(Broker.get_instance().http_port)+path
-        print url
+        print(url)
         # http"://localhost:broker.http_port
         request = self._http_agent.request(
             'GET',
@@ -157,7 +157,7 @@ class CloudLink(parlay.ParlayCommandItem):
         # cool, now set up the websocket connection to that channel
         reactor = self._adapter.reactor
 
-        print "attempting to connect to", self.channel_uri
+        print("attempting to connect to", self.channel_uri)
         self.cloud_factory = CloudLinkWebsocketClientFactory(self, self.channel_uri,  reactor=reactor)
         self.cloud_factory.protocol = CloudLinkWebsocketClient
         self.cloud_factory.continueTrying = True  # attempt to reconnect
@@ -238,11 +238,11 @@ class CloudLinkWebsocketClient(WebSocketClientProtocol):
         self.sendMessage(json.dumps(msg))
 
     def onConnect(self, response):
-        print "Connected to cloud"
+        print("Connected to cloud")
         self.factory.cloud_item.connected_to_cloud = True
 
     def connectionLost(self, reason):
-        print "connection lost:", str(reason)
+        print("connection lost:", str(reason))
         self.factory.cloud_item.connected_to_cloud = False
 
     def onMessage(self, payload, isBinary):
@@ -258,7 +258,7 @@ class CloudLinkWebsocketClient(WebSocketClientProtocol):
 
         try:
             msg = json.loads(payload)
-            print msg
+            print(msg)
 
             # special logic for subscriptions. If we want to subscribe, then push it to the cloud
             if msg["TOPICS"].get('type') == 'subscribe':
@@ -267,7 +267,7 @@ class CloudLinkWebsocketClient(WebSocketClientProtocol):
             else:
                 self._adapter.publish(msg, self.send_message_to_cloud_channel)
         except Exception as e:
-            print "Exception on message" + str(payload) + "  " + str(e)
+            print("Exception on message" + str(payload) + "  " + str(e))
 
 
 @parlay.local_item()
@@ -284,7 +284,7 @@ class CloudStressTest(parlay.ParlayCommandItem):
         :type max int
         :return:
         """
-        for x in xrange(max):
+        for x in range(max):
             self.data = x
             time.sleep(self.sleep_time)
 

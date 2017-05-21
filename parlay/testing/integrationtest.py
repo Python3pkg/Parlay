@@ -60,7 +60,7 @@ class TestCase(unittest.TestCase):
         """
         try:
             self.broker_process = start_broker()
-            for _ in xrange(_BROKER_SETUP_NUM_RETRIES - 1):
+            for _ in range(_BROKER_SETUP_NUM_RETRIES - 1):
                 time.sleep(_BROKER_SETUP_WAIT_TIME)
                 try:
                     setup(timeout=_BROKER_SETUP_TIMEOUT_TIME)

@@ -1,4 +1,4 @@
-from meta_protocol import ProtocolMeta
+from .meta_protocol import ProtocolMeta
 import inspect
 from twisted.internet import defer
 from parlay.server.broker import run_in_broker, run_in_thread
@@ -7,12 +7,11 @@ from collections import deque
 
 
 
-class BaseProtocol(object):
+class BaseProtocol(object, metaclass=ProtocolMeta):
     """
     This the base protocol that *all* parlay protocols must inherit from. Subclass this to make custom protocols to
     talk to 3rd party equipment.
     """
-    __metaclass__ = ProtocolMeta
 
     def __init__(self):
         self._new_data = PrivateDeferred()
@@ -54,7 +53,7 @@ class BaseProtocol(object):
         """
         # get the arguments
         # (don't use argspec because it is needlesly strict and fails on perfectly valid Cython functions)
-        args, varargs, varkw = inspect.getargs(cls.open.func_code)
+        args, varargs, varkw = inspect.getargs(cls.open.__code__)
         return args[2:]  # remove 'cls' and 'broker'
 
     @classmethod
@@ -66,11 +65,11 @@ class BaseProtocol(object):
         :rtype: dict
         """
         # (don't use argspec because it is needlesly strict and fails on perfectly valid Cython functions)
-        defaults = cls.open.func_defaults if cls.open.func_defaults is not None else []
+        defaults = cls.open.__defaults__ if cls.open.__defaults__ is not None else []
         params = cls.get_open_params()
         # cut params to only the last x (defaults are always at the end of the signature)
         params = params[len(params) - len(defaults):]
-        return dict(zip(params, defaults))
+        return dict(list(zip(params, defaults)))
 
     def get_protocol_discovery_meta_info(self):
         """
@@ -98,7 +97,7 @@ class BaseProtocol(object):
         """
         Call this when you have new data and want to pass it to any waiting Items
         """
-        print data
+        print(data)
         old_new_data = self._new_data
 
         # setup the new data in case it causes a callback to fire

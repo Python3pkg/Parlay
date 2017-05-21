@@ -2,7 +2,7 @@ from twisted.internet import defer
 from parlay.items.base import MSG_TYPES, MSG_STATUS
 from parlay.protocols.utils import message_id_generator
 from twisted.python.failure import Failure
-from base import BaseItem
+from .base import BaseItem
 from parlay.server.broker import Broker, run_in_broker
 import sys
 import json
@@ -179,7 +179,7 @@ class ThreadedItem(BaseItem):
         msg['TOPICS']['TX_TYPE'] = 'DIRECT' if direct else "BROADCAST"
         msg['TOPICS']['MSG_TYPE'] = msg_type
         msg['TOPICS']['RESPONSE_REQ'] = response_req
-        msg['TOPICS']['MSG_ID'] = self._message_id_generator.next()
+        msg['TOPICS']['MSG_ID'] = next(self._message_id_generator)
         msg['TOPICS']['TO'] = to
         msg['TOPICS']['FROM'] = self.item_id
         if command is not None:
@@ -216,7 +216,7 @@ class ThreadedItem(BaseItem):
         if not self._reactor.running:
             raise Exception("You must call parlay.utils.setup() at the beginning of a script!")
 
-        print "Running discovery..."
+        print("Running discovery...")
         # block the thread until we get a discovery or error
         return self._reactor.maybeblockingCallFromThread(self._in_reactor_discover, force)
 
@@ -345,7 +345,7 @@ class ThreadedItem(BaseItem):
             result = template(item_disc, self)
             return result
         except Exception as e:
-            print "Could not construct proxy Item. Caught Exception :" + str(e)
+            print("Could not construct proxy Item. Caught Exception :" + str(e))
             raise
 
     def _find_item_info(self, discovery, item_id, key):

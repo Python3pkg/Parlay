@@ -70,8 +70,8 @@ class ParlayScript(ThreadedItem):
         except Exception as e:
             # handle any exception thrown
             exc_type,exc_value,exc_traceback = sys.exc_info()
-            print "Exception Error:  ",  exc_value
-            print e
+            print("Exception Error:  ",  exc_value)
+            print(e)
 
             # print traceback, excluding this file
             traceback.print_tb(exc_traceback)

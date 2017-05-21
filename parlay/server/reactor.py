@@ -4,7 +4,7 @@ Instead of importing the twisted.internet reactor import this reactor like
 from parlay.server.reactor import reactor
 """
 from twisted.internet import reactor as twisted_reactor, defer
-import thread as python_thread
+import _thread as python_thread
 from twisted.internet import threads as twisted_threads
 import functools
 

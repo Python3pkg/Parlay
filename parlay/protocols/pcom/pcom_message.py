@@ -14,10 +14,10 @@ conversion to and from a JSON message.
 
 from parlay.protocols.utils import message_id_generator
 
-import pcom_serial
+from . import pcom_serial
 import logging
-import serial_encoding
-from enums import *
+from . import serial_encoding
+from .enums import *
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +76,7 @@ class PCOMMessage(object):
         else:
             # if the item ID wasn't in our map, generate an int for it
             # and add it to the map
-            item_id = cls._item_id_generator.next()
+            item_id = next(cls._item_id_generator)
             cls._item_lookup_map[name] = item_id
             cls._item_lookup_map[item_id] = name
             return item_id
@@ -94,7 +94,7 @@ class PCOMMessage(object):
 
     @staticmethod
     def _look_up_id(map, destination_id, name):
-        if isinstance(name, basestring):
+        if isinstance(name, str):
             # TODO: use .get() to avoid key error
             return map[destination_id].get(name, None)
         else:
@@ -586,7 +586,7 @@ class PCOMMessage(object):
         # If we got here we know that the number of output parameters is the same
         # as the number of data pieces so we can match our output parameters to data pieces
         # 1:1. Simply zip them together and throw them in the CONTENTS dictionary.
-        contents_map.update(dict(zip(output_param_names, self.data)))
+        contents_map.update(dict(list(zip(output_param_names, self.data))))
 
     def category(self):
         return (self.msg_type & CATEGORY_MASK) >> CATEGORY_SHIFT

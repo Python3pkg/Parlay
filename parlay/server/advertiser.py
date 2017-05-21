@@ -24,7 +24,7 @@ class ParlayAdvertiser(DatagramProtocol):
         self.transport.joinGroup(UDP_MULTICAST_GROUP)
 
     def datagramReceived(self, datagram, address):
-        print "Datagram %s received from %s" % (repr(datagram), repr(address))
+        print("Datagram %s received from %s" % (repr(datagram), repr(address)))
         try:
             request = json.loads(datagram)
             if request.get("type", None) == "GET_PARLAY_INFO":
@@ -52,18 +52,18 @@ class ParlayConsumer(DatagramProtocol):
         self.transport.write(json.dumps(request), (UDP_MULTICAST_GROUP, UDP_MULTICAST_PORT))
 
     def print_output(self):
-        print "Active Parlay Hosts"
+        print("Active Parlay Hosts")
         if len(self.found_hosts) == 0:
-            print "None"
+            print("None")
             return
 
         # get them in a table
         table = [["name", "URL"]]
-        table.extend([ (v, k) for k,v in self.found_hosts.iteritems()])
+        table.extend([ (v, k) for k,v in self.found_hosts.items()])
         # print the table
         row_format = "{:<35}" * (len(table[0]))
         for row in table:
-            print row_format.format(*row)
+            print(row_format.format(*row))
 
     def datagramReceived(self, datagram, address):
         try:

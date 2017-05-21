@@ -1,4 +1,4 @@
-import Queue
+import queue
 import datetime
 from parlay.items.threaded_item import ITEM_PROXIES, ThreadedItem, ListenerStatus
 from parlay.items.base import MSG_STATUS, MSG_TYPES
@@ -39,10 +39,10 @@ class ParlayStandardScriptProxy(object):
                 # Wait until we're sure its set
                 resp = instance._script.send_parlay_message(msg)
             except TypeError as e:
-                print "Could not set property to non JSON serializable type. You tried to set", self._id, "to", value
+                print("Could not set property to non JSON serializable type. You tried to set", self._id, "to", value)
 
             except Exception as e:
-                print "Caught general exception while trying to set", self._id, "to", value
+                print("Caught general exception while trying to set", self._id, "to", value)
 
         def __str__(self):
             return str(self.__get__(self._item_proxy, self._item_proxy))
@@ -300,7 +300,7 @@ class CommandHandle(object):
         self._script = script
         self.msg_list = []  # list of al messages with the same message id but swapped TO and FROM
         self._done = False  # True when we're done listening (So we can clean up)
-        self._queue = Queue.Queue()
+        self._queue = queue.Queue()
 
         # add our listener
         self._script.add_listener(self._generic_on_message)

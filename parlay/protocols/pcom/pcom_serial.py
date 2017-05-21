@@ -21,8 +21,8 @@ from serial.tools import list_ports
 
 import logging
 
-from serial_encoding import *
-from enums import *
+from .serial_encoding import *
+from .enums import *
 
 import time
 import json
@@ -202,7 +202,7 @@ class PCOMSerial(BaseProtocol, LineReceiver):
 
         self._ack_window.reset_window()
 
-        self._ack_table = {seq_num: defer.Deferred() for seq_num in xrange(2**self.SEQ_BITS)}
+        self._ack_table = {seq_num: defer.Deferred() for seq_num in range(2**self.SEQ_BITS)}
         self._ack_window = SlidingACKWindow(self.WINDOW_SIZE, self.NUM_RETRIES)
 
     def close(self):
@@ -277,7 +277,7 @@ class PCOMSerial(BaseProtocol, LineReceiver):
         self._discovery_in_progress = False
         self._discovery_deferred = defer.Deferred()
 
-        self._ack_table = {seq_num: defer.Deferred() for seq_num in xrange(2**self.SEQ_BITS)}
+        self._ack_table = {seq_num: defer.Deferred() for seq_num in range(2**self.SEQ_BITS)}
 
         self._ack_window = SlidingACKWindow(self.WINDOW_SIZE, self.NUM_RETRIES)
 
@@ -314,7 +314,7 @@ class PCOMSerial(BaseProtocol, LineReceiver):
                 "TX_TYPE": "BROADCAST",
                 "MSG_TYPE": "EVENT",
                 "MSG_STATUS": "ERROR",
-                "MSG_ID": self._event_id_generator.next(),
+                "MSG_ID": next(self._event_id_generator),
                 "FROM": self.DISCOVERY_CODE,
             },
             "CONTENTS": {
@@ -366,7 +366,7 @@ class PCOMSerial(BaseProtocol, LineReceiver):
 
         # Get the next sequence number and then wrap the protocol with
         # the desired low level byte wrapping and send down serial line
-        sequence_num = self._seq_num.next()
+        sequence_num = next(self._seq_num)
         try:
             packet = str(wrap_packet(packet, sequence_num, need_ack))
 
@@ -605,7 +605,7 @@ class PCOMSerial(BaseProtocol, LineReceiver):
         :return:
         """
         # Increment the event ID
-        event_id = self._event_id_generator.next()
+        event_id = next(self._event_id_generator)
 
         # Construct the message based on the parameters
 
@@ -729,11 +729,11 @@ class PCOMSerial(BaseProtocol, LineReceiver):
             PCOM_COMMAND_MAP, PCOM_COMMAND_NAME_MAP, PCOM_ITEM_NAME_MAP
 
         def _convert_item_ids_to_int(_map):
-            return {int(k): v for k, v in _map.items()}
+            return {int(k): v for k, v in list(_map.items())}
 
         def _convert_command_and_prop_ids(_map):
-            for k, v in _map.items():
-                for command_id, cmd_info in v.items():
+            for k, v in list(_map.items()):
+                for command_id, cmd_info in list(v.items()):
                     if command_id.isdigit():
                         _map[k][int(command_id)] = cmd_info
                         del _map[k][command_id]
@@ -1395,7 +1395,7 @@ class SlidingACKWindow:
         self.MAX_ACK_SEQ = 16
         # Initialize lack_acked_map so that none of the first ACKs think they are
         # duplicates. -1 works because no ACK has sequence number -1
-        self._last_acked_map = {seq_num: -1 for seq_num in xrange(self.MAX_ACK_SEQ/2)}
+        self._last_acked_map = {seq_num: -1 for seq_num in range(self.MAX_ACK_SEQ/2)}
 
     def ack_received_callback(self, sequence_number):
         """
@@ -1429,7 +1429,7 @@ class SlidingACKWindow:
 
         self._window = {}
         self._queue = []
-        self._last_acked_map = {seq_num: -1 for seq_num in xrange(self.MAX_ACK_SEQ/2)}
+        self._last_acked_map = {seq_num: -1 for seq_num in range(self.MAX_ACK_SEQ/2)}
 
     def ack_timeout_errback(self, timeout_failure):
         """

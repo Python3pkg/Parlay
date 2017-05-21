@@ -1,14 +1,15 @@
-from base import BaseItem
+from .base import BaseItem
 from parlay.protocols.utils import message_id_generator
 from twisted.internet import defer
 from parlay.server.broker import run_in_broker, run_in_thread
 from parlay.items.threaded_item import ThreadedItem
 from parlay.items.base import INPUT_TYPES, MSG_STATUS, MSG_TYPES, TX_TYPES, INPUT_TYPE_DISCOVERY_LOOKUP, \
     INPUT_TYPE_CONVERTER_LOOKUP
-from parlay_standard_proxys import BadStatusError, CommandHandle
+from .parlay_standard_proxys import BadStatusError, CommandHandle
 import os
 import re
 import inspect
+import collections
 
 
 FILE_CAP_SIZE = 400  # megabytes
@@ -115,8 +116,8 @@ class ParlayStandardItem(ThreadedItem):
         discovery = BaseItem.get_discovery(self)
         discovery["TOPIC_FIELDS"] = self._topic_fields
         discovery["CONTENT_FIELDS"] = self._content_fields
-        discovery["PROPERTIES"] = sorted([x for x in self._properties.values()], key=lambda v: v['PROPERTY'])
-        discovery["DATASTREAMS"] = sorted([x for x in self._datastreams.values()], key=lambda v: v['STREAM'])
+        discovery["PROPERTIES"] = sorted([x for x in list(self._properties.values())], key=lambda v: v['PROPERTY'])
+        discovery["DATASTREAMS"] = sorted([x for x in list(self._datastreams.values())], key=lambda v: v['STREAM'])
 
         if self.item_type is not None:
             discovery["TYPE"] = self.item_type
@@ -157,7 +158,7 @@ class ParlayStandardItem(ThreadedItem):
                     "DESCRIPTION": filename,
                     "INFO": file_contents}
             except IOError as e:
-                print e
+                print(e)
                 return
 
         if receiver is None:
@@ -176,7 +177,7 @@ class ParlayStandardItem(ThreadedItem):
         contents is a dictionary of contents to send
         """
         if msg_id is None:
-            msg_id = self._message_id_generator.next()
+            msg_id = next(self._message_id_generator)
         if contents is None:
             contents = {}
         if from_ is None:
@@ -303,7 +304,7 @@ class ParlayProperty(object):
 
     def __set__(self, instance, value):
         # special case for boolean
-        if self._val_type == bool and isinstance(value, basestring):
+        if self._val_type == bool and isinstance(value, str):
             if value.lower() == "false" or value == "0":
                 value = False
 
@@ -311,7 +312,7 @@ class ParlayProperty(object):
         val = value if self._val_type is None else self._val_type(value)
         self._val_lookup[instance] = val if self._custom_write is None else self._custom_write(val)
 
-        for listener in self.listeners.get(instance, {}).values():
+        for listener in list(self.listeners.get(instance, {}).values()):
             listener(value)  # call any listeners
         self._callback(value)  # call my callback
 
@@ -337,7 +338,7 @@ class ParlayDatastream(ParlayProperty):
 
     units = None  # deprecated units
     def __init__(self, *args, **kwargs):
-        print "DATASTREAMS ARE DEPRECATED"
+        print("DATASTREAMS ARE DEPRECATED")
         ParlayProperty.__init__(self, *args, read_only=True, **kwargs)
 
 
@@ -402,7 +403,7 @@ class ParlayCommandItem(ParlayStandardItem):
         :rtype : object
         """
         if item_id is None:
-            item_id = ParlayCommandItem.SUBSYSTEM_ID + "." + self.__class__.__name__ + "." + str(ParlayCommandItem.__ID_GEN.next())
+            item_id = ParlayCommandItem.SUBSYSTEM_ID + "." + self.__class__.__name__ + "." + str(next(ParlayCommandItem.__ID_GEN))
 
         if name is None:
             name = self.__class__.__name__
@@ -421,18 +422,18 @@ class ParlayCommandItem(ParlayStandardItem):
         for member_name in [x for x in dir(self) if not x.startswith("__")]:
             member = getattr(self, member_name, {})
             # are we a method? and do we have the flag, and is it true?
-            if callable(member) and hasattr(member, "_parlay_command") and member._parlay_command:
+            if isinstance(member, collections.Callable) and hasattr(member, "_parlay_command") and member._parlay_command:
                 self._commands[member_name] = member
                 # build the sub-field based on their signature
-                arg_names = member._parlay_fn.func_code.co_varnames[1:member._parlay_fn.func_code.co_argcount]   # remove self
+                arg_names = member._parlay_fn.__code__.co_varnames[1:member._parlay_fn.__code__.co_argcount]   # remove self
 
                 # get a list of the default arguments
                 # (don't use argspec because it is needlesly strict and fails on perfectly valid Cython functions)
-                defaults = member._parlay_fn.func_defaults if member._parlay_fn.func_defaults is not None else []
+                defaults = member._parlay_fn.__defaults__ if member._parlay_fn.__defaults__ is not None else []
                 # cut params to only the last x (defaults are always at the end of the signature)
                 params = arg_names
                 params = params[len(params) - len(defaults):]
-                default_lookup = dict(zip(params, defaults))
+                default_lookup = dict(list(zip(params, defaults)))
 
                 # add the sub_fields, trying to best guess their discovery types. If not possible then default to STRING
                 member.__func__._parlay_sub_fields = [self.create_field(x,
@@ -468,7 +469,7 @@ class ParlayCommandItem(ParlayStandardItem):
             return  # nothing to do here
 
         else:  # more than 1 option
-            command_names = self._commands.keys()
+            command_names = list(self._commands.keys())
             command_names.sort()  # pretty-sort
 
             # add the command selection dropdown
@@ -563,14 +564,14 @@ class ParlayCommandItem(ParlayStandardItem):
             arg_names = ()
             try:
                 method = self._commands[command]
-                arg_names = method._parlay_fn.func_code.co_varnames[1: method._parlay_fn.func_code.co_argcount]  # remove 'self'
+                arg_names = method._parlay_fn.__code__.co_varnames[1: method._parlay_fn.__code__.co_argcount]  # remove 'self'
                 # add the defaults to the msg if they're not overwritten
-                defaults = method._parlay_fn.func_defaults if method._parlay_fn.func_defaults is not None else []
+                defaults = method._parlay_fn.__defaults__ if method._parlay_fn.__defaults__ is not None else []
                 # cut params to only the last x (defaults are always at the end of the signature)
                 params = arg_names
                 params = params[len(params) - len(defaults):]
-                default_lookup = dict(zip(params, defaults))
-                for k,v in default_lookup.iteritems():
+                default_lookup = dict(list(zip(params, defaults)))
+                for k,v in default_lookup.items():
                     if k not in msg["CONTENTS"] or msg["CONTENTS"][k] is None:
                         msg["CONTENTS"][k] = v
 
@@ -578,7 +579,7 @@ class ParlayCommandItem(ParlayStandardItem):
                 try:
                     # do any type conversions (default to whatever we were sent if no conversions)
                     kws = {k: method._parlay_arg_conversions[k](v) if k in method._parlay_arg_conversions
-                                                                   else v for k, v in kws.iteritems()}
+                                                                   else v for k, v in kws.items()}
                 except (ValueError, TypeError) as e:
                     self.send_response(msg, contents={"DESCRIPTION": e.message, "ERROR": "BAD TYPE"},
                                        msg_status=MSG_STATUS.ERROR)

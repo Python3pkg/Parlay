@@ -59,7 +59,7 @@ class BaseProtocolTest(unittest.TestCase, ReactorMixin):
         def run_test():
             handle = self.protocol.get_new_data_wait_handler()
             data_out.append(handle.wait(0.5))
-            print "done waiting"
+            print("done waiting")
 
         @run_in_thread
         def push_data():

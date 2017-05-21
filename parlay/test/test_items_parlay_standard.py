@@ -60,7 +60,7 @@ class PropertyTest(unittest.TestCase, AdapterMixin, ReactorMixin):
         self.prop_item.on_message({"TOPICS": {"TO": "PROPERTY_TEST_ITEM", "MSG_TYPE": "PROPERTY",
                                               "FROM": "TEST", "MSG_ID": 100},
                                    "CONTENTS": {"ACTION": "GET", "PROPERTY": "simple_property"}})
-        print self.adapter.last_published
+        print(self.adapter.last_published)
         self.assertEqual(self.adapter.last_published,
                          {'TOPICS': {'FROM': 'PROPERTY_TEST_ITEM', 'MSG_TYPE': 'RESPONSE',
                                      'MSG_STATUS': 'OK', 'MSG_ID': 100, 'TO': 'TEST', 'RESPONSE_REQ': False,
@@ -73,7 +73,7 @@ class PropertyTest(unittest.TestCase, AdapterMixin, ReactorMixin):
         self.prop_item.on_message({"TOPICS": {"TO": "PROPERTY_TEST_ITEM", "MSG_TYPE": "PROPERTY",
                                               "FROM": "TEST", "MSG_ID": 900},
                                    "CONTENTS": {"ACTION": "GET", "PROPERTY": "simple_property"}})
-        print self.adapter.last_published
+        print(self.adapter.last_published)
         self.assertEqual(self.adapter.last_published,
                          {'TOPICS': {'FROM': 'PROPERTY_TEST_ITEM', 'MSG_TYPE': 'RESPONSE',
                                      'MSG_STATUS': 'OK', 'MSG_ID': 900, 'TO': 'TEST', 'RESPONSE_REQ': False,

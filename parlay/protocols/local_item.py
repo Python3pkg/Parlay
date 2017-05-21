@@ -2,7 +2,7 @@
 The Local Item protocol lets you open arbitrary items that have been registered as local
 """
 
-from base_protocol import BaseProtocol
+from .base_protocol import BaseProtocol
 from parlay.server.broker import Broker
 from functools import wraps
 
@@ -96,7 +96,7 @@ class LocalItemProtocol(BaseProtocol):
 
     @classmethod
     def get_open_params_defaults(cls):
-        return {"item_name": LOCAL_ITEM_CLASSES.keys()}
+        return {"item_name": list(LOCAL_ITEM_CLASSES.keys())}
 
     @classmethod
     def close(cls):
@@ -118,7 +118,7 @@ def auto_start():
     """
     Auto start local items that have that flag set
     """
-    for name, cls in LOCAL_ITEM_CLASSES.iteritems():
+    for name, cls in LOCAL_ITEM_CLASSES.items():
         if cls._local_item_auto_connect:
             #construct them on init and store them in the list so they don't get garbage collected
             auto_started_items.append(cls())

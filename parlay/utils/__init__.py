@@ -1,5 +1,5 @@
 
-import scripting_setup
+from . import scripting_setup
 
 # public API
 setup = scripting_setup.setup

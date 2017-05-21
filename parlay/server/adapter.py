@@ -133,8 +133,8 @@ class PyAdapter(Adapter):
         """
         reg = ProtocolMeta.protocol_registry
         # make a dictionary of protocol names (keys) to (values) a dictionary of open params and defaults
-        protocols = {k: {} for k in reg.keys()}
-        for name in protocols.keys():
+        protocols = {k: {} for k in list(reg.keys())}
+        for name in list(protocols.keys()):
             protocols[name]["params"] = reg[name].get_open_params()
             protocols[name]["defaults"] = reg[name].get_open_params_defaults()
 

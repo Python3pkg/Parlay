@@ -16,7 +16,7 @@ INPUT_TYPE_DISCOVERY_LOOKUP = {'str': INPUT_TYPES.STRING, 'string': INPUT_TYPES.
                                'short': INPUT_TYPES.NUMBER, 'long': INPUT_TYPES.NUMBER, 'list[]': INPUT_TYPES.ARRAY}
 
 # dynamically add list types
-for k in INPUT_TYPE_DISCOVERY_LOOKUP.keys():
+for k in list(INPUT_TYPE_DISCOVERY_LOOKUP.keys()):
     v = INPUT_TYPE_DISCOVERY_LOOKUP[k]
     list_type = INPUT_TYPES.ARRAY
     if v == INPUT_TYPES.NUMBER:
@@ -30,7 +30,7 @@ INPUT_TYPE_CONVERTER_LOOKUP = {'int': int, 'str': str, 'string': str, 'char': ch
                                'short' : int, 'long': int, 'list[]': lambda list_arg: list_arg}
 
 # dynamically add list types
-for k in INPUT_TYPE_CONVERTER_LOOKUP.keys():
+for k in list(INPUT_TYPE_CONVERTER_LOOKUP.keys()):
     v = INPUT_TYPE_CONVERTER_LOOKUP[k]
     INPUT_TYPE_CONVERTER_LOOKUP['list['+k+']'] = lambda list_arg, k=k, v=v: [v(x) for x in list_arg]
 

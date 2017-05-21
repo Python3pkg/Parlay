@@ -293,7 +293,7 @@ class TestSerialEncoding(unittest.TestCase):
         self.assertEqual('\x02\x81\x4b\x01\x00\x33\x03', serial_encoding.wrap_packet('\x33', 1, True))
 
     def test_checksum(self):
-        sum_p = serial_encoding.sum_packet(range(0, 100)*100)
+        sum_p = serial_encoding.sum_packet(list(range(0, 100))*100)
         check_s = serial_encoding.get_checksum(sum_p)
         self.assertEqual(0, sum_p+check_s & 0xff)
 
@@ -348,20 +348,20 @@ class TestPCOMMessage(unittest.TestCase):
         }
     }
 
-    PROPERTY_NAME_MSG = {u'TOPICS': {u'TO': 343, u'MSG_ID': 7, u'FROM': u'qt.SelfTest', u'MSG_TYPE': u'PROPERTY'},
-                         u'CONTENTS': {u'PROPERTY': 'test_property', u'ACTION': 'GET'}}
+    PROPERTY_NAME_MSG = {'TOPICS': {'TO': 343, 'MSG_ID': 7, 'FROM': 'qt.SelfTest', 'MSG_TYPE': 'PROPERTY'},
+                         'CONTENTS': {'PROPERTY': 'test_property', 'ACTION': 'GET'}}
 
-    PROPERTY_NAME_2 = {u'TOPICS': {u'TO': 343, u'MSG_ID': 3, u'FROM': u'qt.SelfTest', u'MSG_TYPE': u'PROPERTY'},
-     u'CONTENTS': {u'ACTION': u'GET', u'PROPERTY': u'chassis'}}
+    PROPERTY_NAME_2 = {'TOPICS': {'TO': 343, 'MSG_ID': 3, 'FROM': 'qt.SelfTest', 'MSG_TYPE': 'PROPERTY'},
+     'CONTENTS': {'ACTION': 'GET', 'PROPERTY': 'chassis'}}
 
-    PROPERTY_ID_MSG = {u'TOPICS': {u'TO': 343, u'MSG_ID': 7, u'FROM': u'qt.SelfTest', u'MSG_TYPE': u'PROPERTY'},
-                   u'CONTENTS': {u'PROPERTY': 1100, u'ACTION': 'GET'}}
+    PROPERTY_ID_MSG = {'TOPICS': {'TO': 343, 'MSG_ID': 7, 'FROM': 'qt.SelfTest', 'MSG_TYPE': 'PROPERTY'},
+                   'CONTENTS': {'PROPERTY': 1100, 'ACTION': 'GET'}}
 
-    COMMAND_NAME_MSG = {u'TOPICS': {u'TO': 343, u'MSG_ID': 7, u'FROM': u'qt.SelfTest', u'MSG_TYPE': u'COMMAND'},
-                    u'CONTENTS': {u'COMMAND': 'test_command'}}
+    COMMAND_NAME_MSG = {'TOPICS': {'TO': 343, 'MSG_ID': 7, 'FROM': 'qt.SelfTest', 'MSG_TYPE': 'COMMAND'},
+                    'CONTENTS': {'COMMAND': 'test_command'}}
 
-    STREAM_NAME_MSG = {u'TOPICS': {u'TO': 343, u'MSG_ID': 5, u'FROM': u'DeviceSession', u'MSG_TYPE': u'STREAM'},
-                    u'CONTENTS': {u'STOP': False, u'STREAM': u'test_property_stream'}}
+    STREAM_NAME_MSG = {'TOPICS': {'TO': 343, 'MSG_ID': 5, 'FROM': 'DeviceSession', 'MSG_TYPE': 'STREAM'},
+                    'CONTENTS': {'STOP': False, 'STREAM': 'test_property_stream'}}
 
     test_pcom_message = PCOMMessage()
 
@@ -377,7 +377,7 @@ class TestPCOMMessage(unittest.TestCase):
         self.assertEqual(PCOMMessage._look_up_id(TEST_COMMAND_MAP, TEST_ITEM_ID, 'test_command'), 100)
         self.assertEqual(PCOMMessage._look_up_id(TEST_STREAM_MAP, TEST_ITEM_ID, 'test_property_stream'), 1100)
 
-        pcom_serial.PCOM_PROPERTY_NAME_MAP = {TEST_ITEM_ID: {'test_property': 1100, u'chassis': 101}}
+        pcom_serial.PCOM_PROPERTY_NAME_MAP = {TEST_ITEM_ID: {'test_property': 1100, 'chassis': 101}}
         pcom_serial.PCOM_COMMAND_NAME_MAP = {TEST_ITEM_ID: {'test_command': 100}}
         pcom_serial.PCOM_STREAM_NAME_MAP = {TEST_ITEM_ID: {'test_property_stream': 1100}}
 
@@ -437,9 +437,9 @@ class TestPCOMMessage(unittest.TestCase):
 
         # Test different data types
         test_contents = {}
-        self.test_pcom_message.data = [[1, 2, 3, 4], "hello", u"hello", (5, 6)]
+        self.test_pcom_message.data = [[1, 2, 3, 4], "hello", "hello", (5, 6)]
         self.test_pcom_message._build_contents_map(["p1", "p2", "p3", "p4"], test_contents)
-        self.assertEqual({"p1": [1, 2, 3, 4], "p2": "hello", "p3": u"hello", "p4": (5, 6)}, test_contents)
+        self.assertEqual({"p1": [1, 2, 3, 4], "p2": "hello", "p3": "hello", "p4": (5, 6)}, test_contents)
 
         # Test no data error condition
         test_contents = {}

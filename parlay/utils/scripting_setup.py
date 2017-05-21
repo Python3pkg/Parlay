@@ -1,5 +1,5 @@
 from parlay.server.reactor import reactor, run_in_reactor
-from parlay_script import ParlayScript, DEFAULT_ENGINE_WEBSOCKET_PORT, start_script
+from .parlay_script import ParlayScript, DEFAULT_ENGINE_WEBSOCKET_PORT, start_script
 from threading import Thread
 import inspect
 import time
@@ -34,9 +34,9 @@ def start_reactor(ip, port):
                                                               stop_reactor_on_close=True, reactor=THREADED_REACTOR))
         THREADED_REACTOR._registerAsIOThread = False
         THREADED_REACTOR.run(installSignalHandlers=False)
-        print "DONE REACTING"
+        print("DONE REACTING")
     except Exception as e:
-        print e
+        print(e)
 
 
 def setup(ip='localhost', port=DEFAULT_ENGINE_WEBSOCKET_PORT, timeout=3):
@@ -56,7 +56,7 @@ def setup(ip='localhost', port=DEFAULT_ENGINE_WEBSOCKET_PORT, timeout=3):
         r.start()
         # wait till we're ready
         start = datetime.datetime.now()
-        print "Connecting to", ip, ":", port
+        print("Connecting to", ip, ":", port)
         while THREADED_REACTOR is None or (not THREADED_REACTOR.running) or not ThreadedParlayScript.ready:
             time.sleep(0.001)
             if (datetime.datetime.now() - start).total_seconds() > timeout:

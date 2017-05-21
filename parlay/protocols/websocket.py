@@ -23,7 +23,7 @@ class WebSocketServerAdapter(WebSocketServerProtocol, Adapter):
 
 
     def onClose(self, wasClean, code, reason):
-        print "Closing:" + str(self)
+        print("Closing:" + str(self))
         # clean up after ourselves
         self.broker.adapters.remove(self)
 
@@ -59,7 +59,7 @@ class WebSocketServerAdapter(WebSocketServerProtocol, Adapter):
                 self.broker.publish(msg, self.send_message_as_JSON)
 
         else:
-            print "Binary messages not supported"
+            print("Binary messages not supported")
 
     def onConnect(self, request):
         # let the broker know we exist!
@@ -139,7 +139,7 @@ class WebsocketClientAdapter(Adapter, WebSocketClientProtocol):
         We got a message.  See who wants to process it.
         """
         if isBinary:
-            print "WebsocketBrokerProtocol doesn't understand binary messages"
+            print("WebsocketBrokerProtocol doesn't understand binary messages")
             return
 
         msg = json.loads(packet)
@@ -160,7 +160,7 @@ class WebsocketClientAdapter(Adapter, WebSocketClientProtocol):
         if _fn is not None:
             def listener(msg):
                 t = msg["TOPICS"]
-                if all(k in t and v == t[k] for k, v in t.iteritems()):
+                if all(k in t and v == t[k] for k, v in t.items()):
                     _fn(msg)
 
             self._listener_list.append(listener)

@@ -4,7 +4,7 @@ from twisted.internet import defer
 from parlay.server.adapter import PyAdapter
 from parlay.server.reactor import reactor
 from parlay.protocols.meta_protocol import ProtocolMeta
-from adapter import Adapter
+from .adapter import Adapter
 
 from autobahn.twisted.websocket import WebSocketServerFactory, listenWS
 from twisted.web import static, server
@@ -15,7 +15,7 @@ import functools
 import parlay
 import itertools
 import logging
-import advertiser
+from . import advertiser
 
 # path to the root parlay folder
 PARLAY_PATH = os.path.dirname(os.path.realpath(__file__)) + "/.."
@@ -158,12 +158,12 @@ class Broker(object):
             try:
                 func(msg)
             except Exception as e:
-                print "UNCAUGHT EXCEPTION IN PROTOCOL"
-                print e
+                print("UNCAUGHT EXCEPTION IN PROTOCOL")
+                print(e)
 
         TOPICS = msg['TOPICS']
         # for each key in the listeners list
-        for k in TOPICS.keys():
+        for k in list(TOPICS.keys()):
             # If the key exists and  values match, then call any functions or look further
             #   root_list[k] is the value, which is a key to another dictionary
             #   The None key in that dictionary will contain a list of funcs to call
@@ -182,8 +182,8 @@ class Broker(object):
         """
         # only bound methods (or explicit owners) are allowed to subscribe so they are easier to clean up later
         if _owner_ is None:
-            if hasattr(func, 'im_self') and func.im_self is not None:
-                owner = func.im_self
+            if hasattr(func, 'im_self') and func.__self__ is not None:
+                owner = func.__self__
             else:
                 raise ValueError("Function {} passed to subscribe_listener() ".format(func.__name__) +
                                  "must be a bound method of an object")
@@ -246,9 +246,9 @@ class Broker(object):
 
         # total subscriptions in this subtrie
         total_sub = 0
-        for k in root_list.keys():
+        for k in list(root_list.keys()):
             if k is not None:  # skip the special NONE key (that's used for callback list)
-                for v in root_list[k].keys():
+                for v in list(root_list[k].keys()):
                     num_sub = self._clean_trie(root_list[k][v])
                     # remove a sub-trie if it doesn't have any subscriptions in it
                     if num_sub == 0:
@@ -341,7 +341,7 @@ class Broker(object):
         try:
             request = msg['TOPICS']['request']
         except KeyError as _:
-            print "BAD BROKER MESSAGE. NO REQUEST! == ", msg
+            print("BAD BROKER MESSAGE. NO REQUEST! == ", msg)
             return
 
         reply = {'TOPICS': {'type': 'broker', 'response': request+"_response"},
@@ -380,7 +380,7 @@ class Broker(object):
                     try:
                         _e.printTraceback()
                     except Exception as _:
-                        print(str(_e))
+                        print((str(_e)))
 
                     reply['CONTENTS'] = {'STATUS': "Error while opening: " + str(_e)}
                     message_callback(reply)
@@ -501,8 +501,8 @@ class Broker(object):
         message_callback(resp_msg)
 
     def handle_unsubscribe_message(self, msg, message_callback):
-        if hasattr(message_callback, 'im_self') and message_callback.im_self is not None:
-            owner = message_callback.im_self
+        if hasattr(message_callback, 'im_self') and message_callback.__self__ is not None:
+            owner = message_callback.__self__
         else:
             raise ValueError("Function {} passed to handle_unsubscribe_message() ".format(message_callback.__name__) +
                              "must be a bound method of an object")
@@ -519,11 +519,11 @@ class Broker(object):
         """
         called on exit to clean up the parlay environment
         """
-        print "Cleaning Up"
+        print("Cleaning Up")
         self._stopped.callback(None)
         if stop_reactor:
             self.reactor.stop()
-        print "Exiting..."
+        print("Exiting...")
 
     @staticmethod
     def get_local_ip():
@@ -552,11 +552,11 @@ class Broker(object):
         signal.signal(signal.SIGINT, lambda sig, frame: self.cleanup())
 
         if mode == Broker.Modes.DEVELOPMENT:
-            print "INFO: Broker running in DEVELOPER mode. This is fine for a development environment"
-            print "INFO: For production systems run the Broker in PRODUCTION mode. e.g.: " + \
-                  "broker.run(mode=Broker.Modes.PRODUCTION)"
+            print("INFO: Broker running in DEVELOPER mode. This is fine for a development environment")
+            print("INFO: For production systems run the Broker in PRODUCTION mode. e.g.: " + \
+                  "broker.run(mode=Broker.Modes.PRODUCTION)")
             # print out the local ip to access this broker from
-            print "This device is remotely accessible at http://" + self.get_local_ip() + ":" + str(self.http_port)
+            print("This device is remotely accessible at http://" + self.get_local_ip() + ":" + str(self.http_port))
 
         self._run_mode = mode
 
@@ -586,9 +586,9 @@ class Broker(object):
                 self.reactor.listenSSL(self.https_port, server.Site(root), ssl_context_factory, interface=interface)
 
             except ImportError:
-                print "WARNING: PyOpenSSL is *not* installed. Parlay cannot host HTTPS or WSS without PyOpenSSL"
+                print("WARNING: PyOpenSSL is *not* installed. Parlay cannot host HTTPS or WSS without PyOpenSSL")
             except Exception as e:
-                print "WARNING: PyOpenSSL has had an error: " + str(e)
+                print("WARNING: PyOpenSSL has had an error: " + str(e))
                 if ssl_only:
                     raise
 
@@ -635,9 +635,9 @@ try:
             return ssl_context
 
 except ImportError:
-        print "WARNING: PyOpenSSL is *not* installed. Parlay cannot host HTTPS or WSS without PyOpenSSL"
+        print("WARNING: PyOpenSSL is *not* installed. Parlay cannot host HTTPS or WSS without PyOpenSSL")
 except Exception as e:
-        print "WARNING: PyOpenSSL has had an error: " + str(e)
+        print("WARNING: PyOpenSSL has had an error: " + str(e))
 
 
 def run_in_broker(fn):
@@ -672,7 +672,7 @@ def run_in_thread(fn):
 
 def main():
     d = Broker(reactor)
-    print "\n Broker is running...\n"
+    print("\n Broker is running...\n")
     d.run()
 
 

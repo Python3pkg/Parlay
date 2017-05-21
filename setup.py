@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 import os
 import re
 import fnmatch
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 
 
 UI_VERSION = "0.0.22"
@@ -32,13 +32,13 @@ def find_files(directory, pattern):
             if fnmatch.fnmatch(basename, pattern):
                 _filename = os.path.join(root, basename)
                 _modulename = os.path.splitext(_filename)[0].replace(os.path.sep, ".")
-                print "Found: " + _modulename
+                print("Found: " + _modulename)
                 yield _modulename, _filename
 
 # If we're doing a build, or index has gotten deleted somehow, grab the correct version
 if not os.path.exists(UI_LOCATION + "/index.html"):
     # wget the dist file and put it in /ui/dist
-    response = urllib2.urlopen('https://github.com/PromenadeSoftware/ParlayUI/releases/download/'+UI_VERSION+'/index.html')
+    response = urllib.request.urlopen('https://github.com/PromenadeSoftware/ParlayUI/releases/download/'+UI_VERSION+'/index.html')
     html = response.read()
     if not os.path.exists(UI_LOCATION):
         os.makedirs(UI_LOCATION)
@@ -57,7 +57,7 @@ else:
         sphinx.build_main(['-b html', 'parlay/docs', DOCS_LOCATION])
         package_data_files.extend([os.path.relpath(filename, "parlay") for _, filename in find_files(DOCS_LOCATION, "*")])
     except ImportError as _:
-        print "Warning: Documentation not built. Please run `pip install sphinx sphinx-rtd-theme` to build documentation."
+        print("Warning: Documentation not built. Please run `pip install sphinx sphinx-rtd-theme` to build documentation.")
 
 
 # Get README to use as long description

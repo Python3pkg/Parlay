@@ -11,11 +11,11 @@ of the PCOM Serial Protocol.
 import struct
 import array
 import sys
-from enums import *
-import pcom_message
+from .enums import *
+from . import pcom_message
 import collections
 
-import pcom_serial
+from . import pcom_serial
 
 FORMAT_STRING_TABLE = {
 
@@ -173,7 +173,7 @@ def flatten(data):
     :param data:  data list to be packed
     :return: flattened data lilst
     """
-    if isinstance(data, collections.Iterable) and not isinstance(data, basestring):
+    if isinstance(data, collections.Iterable) and not isinstance(data, str):
         return [element for lst in data for element in flatten(lst)]
     else:
         return [data]
@@ -257,13 +257,13 @@ def cast_data(fmt_string, data):
             continue
 
         if i == '*':
-            variable_array = data[index].split(",") if isinstance(data[index], basestring) else data[index]
+            variable_array = data[index].split(",") if isinstance(data[index], str) else data[index]
             new_fmt_str = str(len(variable_array)) + expanded_fmt[fmt_index+1]
             result.append(cast_data(expand_fmt_string(new_fmt_str), variable_array))
             skip_next = 1
         elif i.isalpha():
             if i in "bBhHiIlLqQnNx":  # TODO: Should padding (x) be int?
-                data_to_append = int(data[index], 0) if isinstance(data[index], basestring) else int(data[index])
+                data_to_append = int(data[index], 0) if isinstance(data[index], str) else int(data[index])
                 result.append(data_to_append)
             elif i in "fd":
                 result.append(float(data[index]))
@@ -306,7 +306,7 @@ def serialize_response_code(message):
 
     if m_type in VALID_MSG_TYPES:
         code = message.contents.get("STATUS" if m_type == "RESPONSE" else m_type, None)
-        if isinstance(code, basestring):
+        if isinstance(code, str):
             if m_type == "COMMAND":
                 map_to_use = pcom_serial.PCOM_COMMAND_NAME_MAP
             elif m_type == "PROPERTY":
@@ -498,14 +498,14 @@ def decode_pcom_message(binary_msg):
 
     # Remove null byte from all strings in data
     # print msg.data
-    msg.data = map(lambda s: s[:-1] if isinstance(s, basestring) and s.endswith('\x00') else s, msg.data)
+    msg.data = [s[:-1] if isinstance(s, str) and s.endswith('\x00') else s for s in msg.data]
 
     # Map booleans to numbers until UI handles booleans correctly.
-    msg.data = map(lambda s: int(s) if type(s) == bool else s, msg.data)
+    msg.data = [int(s) if type(s) == bool else s for s in msg.data]
 
     # It's possible to receive empty strings for parameter requests.
     # In the case that we do receive an empty string we should not store it in data
-    msg.data = filter(lambda x: x != '', msg.data)
+    msg.data = [x for x in msg.data if x != '']
 
     return msg
 
@@ -609,7 +609,7 @@ def hex_print(buf):
     :param buf: buffer to be printed
     :return:
     """
-    print [hex(ord(x)) for x in buf]
+    print([hex(ord(x)) for x in buf])
 
 
 def wrap_packet(packet, sequence_num, use_ack):

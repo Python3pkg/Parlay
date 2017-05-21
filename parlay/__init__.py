@@ -11,9 +11,9 @@ from parlay.items.parlay_standard import ParlayCommandItem, ParlayProperty, parl
 from parlay.protocols.local_item import local_item
 
 # Script Public API
-from utils.parlay_script import ParlayScript
+from .utils.parlay_script import ParlayScript
 
-from server.broker import Broker
+from .server.broker import Broker
 
 
 # Broker public API

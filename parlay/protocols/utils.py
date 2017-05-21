@@ -51,8 +51,8 @@ class MessageQueue(object):
     def _done_with_msg(self, msg_result):
 
         if isinstance(msg_result, failure.Failure):
-            print "Error encoding packet -- moving on to next packet"
-            print msg_result.getTraceback()
+            print("Error encoding packet -- moving on to next packet")
+            print(msg_result.getTraceback())
 
         # send the next one (if there is one)
         if len(self._q) > 0:
